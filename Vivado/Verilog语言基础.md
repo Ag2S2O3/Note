@@ -1,5 +1,39 @@
 # 硬件描述语言Verilog HDL
 
+<!-- @import "[TOC]" {cmd="toc" depthFrom=2 depthTo=4 orderedList=false} -->
+
+<!-- code_chunk_output -->
+
+- [一、Verilog 模块模板](#一-verilog-模块模板)
+- [二、基本语法规则](#二-基本语法规则)
+  - [2.1 一些符号](#21-一些符号)
+  - [2.2 Verilog逻辑值](#22-verilog逻辑值)
+- [三、数据类型](#三-数据类型)
+  - [3.1 常量](#31-常量)
+  - [3.2 变量](#32-变量)
+    - [3.2.1 net(线网)类型](#321-net线网类型)
+    - [3.2.2 variable(变量)类型](#322-variable变量类型)
+- [四、运算符](#四-运算符)
+  - [4.1 位拼接运算符](#41-位拼接运算符)
+- [五、语句](#五-语句)
+  - [5.1 过程语句（initial、always）](#51-过程语句initial-always)
+  - [5.2 块语句（begin-end）](#52-块语句begin-end)
+  - [5.3 赋值语句 (assign、=、<=)](#53-赋值语句-assign)
+    - [5.3.1 连续赋值语句 assign](#531-连续赋值语句-assign)
+    - [5.3.2 过程赋值语句 (=、<=)](#532-过程赋值语句-)
+  - [5.4 条件语句（if-else、case、casez、casex）](#54-条件语句if-else-case-casez-casex)
+  - [5.5 循环语句（for、forever、repeat、while）](#55-循环语句for-forever-repeat-while)
+- [六、任务、函数与预处理](#六-任务-函数与预处理)
+  - [6.1 任务（task）](#61-任务task)
+  - [6.2 函数（function）](#62-函数function)
+  - [6.3 函数与任务的比较](#63-函数与任务的比较)
+  - [6.4 编译预处理语句](#64-编译预处理语句)
+    - [6.4.1 `define](#641-define)
+    - [6.4.2 `include](#642-include)
+
+<!-- /code_chunk_output -->
+
+
 ## 一、Verilog 模块模板 
 ``` verilog
 module  <模块名> (<输入输出端口列表>);
