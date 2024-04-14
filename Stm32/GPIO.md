@@ -48,7 +48,9 @@ GPIO输出速度可以限制引脚电平反转的最大速度，用于追求低�
 操作stm32的GPIO总共需要**三个**步骤
 
 **1. 使用RCC开启GPIO时钟**
+
 **2. 使用GPIO_Init初始化GPIO**
+
 **3. 使用输出/输入函数控制GPIO**
 
 ### 2.1 RCC库函数
@@ -184,9 +186,11 @@ GPIO_Write(GPIOC, 0x1000);  //0001 0000 0000 0000 PC13
 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 
 GPIO_InitTypeDef GPIO_Initstructure;
-GPIO_Initstructure.GPIO_Mode=GPIO_Mode_Out_IPU; //上拉输入
-GPIO_Initstructure.GPIO_Pin=GPIO_Pin_1
+GPIO_Initstructure.GPIO_Mode=GPIO_Mode_IPU; //上拉输入
+GPIO_Initstructure.GPIO_Pin=GPIO_Pin_1;
 GPIO_Initstructure.GPIO_Speed=GPIO_Speed_50MHz;
+
+GPIO_Init(GPIOA,&GPIO_Initstructure);
 ```
 
 设置一个函数反应按键是否被按下
