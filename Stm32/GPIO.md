@@ -94,7 +94,7 @@ void GPIO_Init(GPIO_TypeDef* GPIOx, GPIO_InitTypeDef* GPIO_InitStruct);
 //读
 uint8_t GPIO_ReadInputDataBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);  //读输入寄存器某个端口的电平（返回端口的高低电平）
 uint16_t GPIO_ReadInputData(GPIO_TypeDef* GPIOx);   //读整个输入寄存器（返回值每一位代表一个端口值）
-uint8_t GPIO_ReadOutputDataBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin); //读输出期存器的某一位（一般用于输出模式下查看输出内容）
+uint8_t GPIO_ReadOutputDataBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin); //读输出寄存器的某一位（一般用于输出模式下查看输出内容）
 uint16_t GPIO_ReadOutputData(GPIO_TypeDef* GPIOx);  //读整个输出寄存器
 //写
 void GPIO_SetBits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);      //将端口指向高电平
