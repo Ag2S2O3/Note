@@ -4,33 +4,34 @@
 
 <!-- code_chunk_output -->
 
-- [硬件描述语言Verilog HDL](#硬件描述语言verilog-hdl)
-  - [一、Verilog 模块模板](#一verilog-模块模板)
-  - [二、基本语法规则](#二基本语法规则)
-    - [2.1 一些符号](#21-一些符号)
-    - [2.2 Verilog逻辑值](#22-verilog逻辑值)
-  - [三、数据类型](#三数据类型)
-    - [3.1 常量](#31-常量)
-    - [3.2 变量](#32-变量)
-      - [3.2.1 net(线网)类型](#321-net线网类型)
-      - [3.2.2 variable(变量)类型](#322-variable变量类型)
-  - [四、运算符](#四运算符)
-    - [4.1 位拼接运算符](#41-位拼接运算符)
-  - [五、语句](#五语句)
-    - [5.1 过程语句（initial、always）](#51-过程语句initialalways)
-    - [5.2 块语句（begin-end）](#52-块语句begin-end)
-    - [5.3 赋值语句 (assign、=、\<=)](#53-赋值语句-assign)
-      - [5.3.1 连续赋值语句 assign](#531-连续赋值语句-assign)
-      - [5.3.2 过程赋值语句 (=、\<=)](#532-过程赋值语句-)
-    - [5.4 条件语句（if-else、case、casez、casex）](#54-条件语句if-elsecasecasezcasex)
-    - [5.5 循环语句（for、forever、repeat、while）](#55-循环语句forforeverrepeatwhile)
-  - [六、任务、函数与预处理](#六任务函数与预处理)
-    - [6.1 任务（task）](#61-任务task)
-    - [6.2 函数（function）](#62-函数function)
-    - [6.3 函数与任务的比较](#63-函数与任务的比较)
-    - [6.4 编译预处理语句](#64-编译预处理语句)
-      - [6.4.1 \`define](#641-define)
-      - [6.4.2 \`include](#642-include)
+- [一、Verilog 模块模板](#一-verilog-模块模板)
+- [二、基本语法规则](#二-基本语法规则)
+  - [2.1 一些符号](#21-一些符号)
+  - [2.2 Verilog逻辑值](#22-verilog逻辑值)
+- [三、数据类型](#三-数据类型)
+  - [3.1 常量](#31-常量)
+  - [3.2 变量](#32-变量)
+    - [3.2.1 net(线网)类型](#321-net线网类型)
+    - [3.2.2 variable(变量)类型](#322-variable变量类型)
+- [四、运算符](#四-运算符)
+  - [4.1 位拼接运算符](#41-位拼接运算符)
+- [五、语句](#五-语句)
+  - [5.1 过程语句（initial、always）](#51-过程语句initial-always)
+  - [5.2 块语句（begin-end）](#52-块语句begin-end)
+  - [5.3 赋值语句 (assign、=、<=)](#53-赋值语句-assign)
+    - [5.3.1 连续赋值语句 assign](#531-连续赋值语句-assign)
+    - [5.3.2 过程赋值语句 (=、<=)](#532-过程赋值语句-)
+  - [5.4 条件语句（if-else、case、casez、casex）](#54-条件语句if-else-case-casez-casex)
+  - [5.5 循环语句（for、forever、repeat、while）](#55-循环语句for-forever-repeat-while)
+- [六、任务、函数与预处理](#六-任务-函数与预处理)
+  - [6.1 任务（task）](#61-任务task)
+  - [6.2 函数（function）](#62-函数function)
+  - [6.3 函数与任务的比较](#63-函数与任务的比较)
+  - [6.4 编译预处理语句](#64-编译预处理语句)
+    - [6.4.1 `define](#641-define)
+    - [6.4.2 `include](#642-include)
+- [七、模块与实例化](#七-模块与实例化)
+  - [7.1 实例化（调用）模块](#71-实例化调用模块)
 
 <!-- /code_chunk_output -->
 
@@ -351,3 +352,67 @@ endfunction
 1. 一个`include语句只能指定一个被包含的文件。
 2. `include语句可以出现在源程序的任何地方。被包含的文件若与包含文件不在同一个子目录下, 必须指明其路径名。
 3. 文件包含允许多重包含, 比如文件1包含文件2, 文件2又包含文件3等
+
+## 七、模块与实例化
+
+### 7.1 实例化（调用）模块
+
+以“分频时钟信号实验”为例
+
+已经定义好的模块有
+
+```verilog
+module MyFerq_div(
+    input clk_in,
+    input rst_in,
+    output reg clk_out
+    );
+    ……后略
+```
+
+那么在主模块中调用时，需要先声明调用模块的名字，然后是实例化名，最后确定参数
+
+如下所示：
+
+```verilog
+module time_01(
+    input clk_main, rst_in,
+    output A
+    );
+MyFerq_div div2_u0(clk_main,rst_in,A);
+```
+
+其中括号内的参数需按照 `MyFerq_div` 中定义的顺序填写以便一一对应；
+
+另一种写法：
+
+```verilog
+module time_01(
+    input clk_main, rst_in,
+    output A
+    );
+MyFerq_div div2_u0(.rst_in(rst_in),.clk_in(clk_main),.clk_out(A));
+```
+
+可以不按照定义的顺序而是指定连线：
+
+`.clk_in(clk_main)` 中`.`后的是 `MyFerq_div` 里面定义的一个rst_in，而`( )`内的则是本模块 `time_01` 内定义的clk_main，相当于用一根线把他们之间连接了起来。
+
+若是两个模块之间的连线，则可以通过声明 `wire` 型变量来作为中间桥梁连接两个模块的输入输出，例程如下：
+
+```verilog
+module time_01(
+    input clk_main, rst_in,
+    output A,B,C
+    );
+
+    wire C10,C15,C5;
+
+    clk_wiz_0 div_u0(.clk_in1(clk_main),.resetn(rst_in),.clk_out10(C10),.clk_out15(C15),.clk_out5(C5));
+
+    MyFerq_div div2_u0(C10,rst_in,A);    //  1HZ
+    MyFerq_div div2_u1(C15,rst_in,B);    //  3HZ
+    MyFerq_div div2_u2(C5,rst_in,C);     //  1HZ
+```
+
+这里面 `div_u0` 输出的clk_out10、clk_out15、clk_out5通过**C10**,**C15**,**C5**连接到了 `div2_u0`、`div2_u1`、`div2_u2` 的输入
