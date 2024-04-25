@@ -92,6 +92,229 @@ USATR2的TX在PB10，RX在PB11
 
 ## 四、与单片机进行串口通信
 
-使用USART1 使单片机的PA9接RXD，PA10接TXD
+使用USART1 使单片机的PA9（UART1_TX）接RXD，PA10（UART1_RX）接TXD，GND接GND
+
+### 4.1 初始化串口
+
+同样是打通3.1中图
+
+**1. 开启USART和GPIO时钟**
+
+**2. GPIO初始化（TX复用输出，RX复用输入）**
+
+**3. 配置USART**
+
+**4. 配置接收中断**
+
+**5. 开启串口**
+
+#### 4.1.1 开启时钟
+
+```c
+void Serial_Init(void)
+{
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
+```
+
+不多讲了
+
+#### 4.1.2 初始化GPIO引脚
+
+```c
+GPIO_InitTypeDef GPIO_Initstructure;
+GPIO_Initstructure.GPIO_Mode=GPIO_Mode_AF_PP;  //复用推挽输出
+GPIO_Initstructure.GPIO_Pin=GPIO_Pin_9;        //使用端口为PA9
+GPIO_Initstructure.GPIO_Speed=GPIO_Speed_50MHz; //速度50MHZ（不需考虑低功耗）
+GPIO_Init(GPIOA,&GPIO_Initstructure);
+	
+GPIO_Initstructure.GPIO_Mode=GPIO_Mode_IPU;  //上拉输入
+GPIO_Initstructure.GPIO_Pin=GPIO_Pin_10;        //使用端口为PA10
+GPIO_Initstructure.GPIO_Speed=GPIO_Speed_50MHz; //速度50MHZ（不需考虑低功耗）
+GPIO_Init(GPIOA,&GPIO_Initstructure);
+```
+
+也不多讲，初始化两次，中间就不用再 GPIO_InitTypeDef 了
+
+#### 4.1.3 初始化USART
+
+```c
+USART_InitTypeDef USART_InitStructure;
+USART_InitStructure.USART_BaudRate= 9600;
+USART_InitStructure.USART_HardwareFlowControl= USART_HardwareFlowControl_None;
+USART_InitStructure.USART_Mode= USART_Mode_Rx | USART_Mode_Tx ;
+USART_InitStructure.USART_Parity= USART_Parity_No;
+USART_InitStructure.USART_StopBits= USART_StopBits_1  ;
+USART_InitStructure.USART_WordLength = USART_WordLength_8b ;
+	
+USART_Init(USART1,&USART_InitStructure);
+```
+
+* 第一个参数**波特率**，需要什么波特率直接写就行，系统会自动算好
+* 第二个参数是**硬件流控制**，我们这里不使用硬件流控制
+* 第三个参数**串口模式**，如果既要发送又要接收那就需要把两个参数或（ `|` ）起来
+* 第四个参数**校验位**，Odd为奇，Even为偶
+* 第五个参数**停止位**，选1
+* 第六个参数**字长**，一般是8位对应无校验，9位对应一位校验
+
+#### 4.1.4 配置接收中断
+
+接收中断是 `USART_IT_RXNE`
+
+```c
+USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+```
+
+开启中断后配置NVIC
+
+```c
+NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+NVIC_InitTypeDef NVIC_InitStructure;	//定义结构体变量
+NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;	//选择配置NVIC的USART1
+NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;		//指定NVIC线路使能
+NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;	//指定NVIC线路的抢占优先级为1
+NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;	//指定NVIC线路的响应优先级为1
+NVIC_Init(&NVIC_InitStructure);	
+```
+
+然后我们寻找到中断函数名字为 `USART1_IRQHandler` 即可编写中断函数
+
+以下采用封装函数的方式获取接收到的数据以及标志位
+
+```c
+u8 Serial_GetRxFlag(void)	//获取串口接收标志位
+{
+	if (Serial_RxFlag == 1)
+	{
+		Serial_RxFlag = 0;
+		return 1;
+	}
+	else
+		return 0;
+}
+
+u8 Serial_GetRxData(void)	//获取串口接收的数据
+{
+	return Serial_RxData;
+}
+
+//中断函数
+void USART1_IRQHandler(void)
+{
+	if(USART_GetITStatus(USART1, USART_IT_RXNE) == SET) //判断中断标志位确实被置1
+	{
+		Serial_RxData = USART_ReceiveData(USART1);	//读取数据寄存器会自动清除RXNE标志位
+		Serial_RxFlag = 1;
+	}
+}
+```
+
+### 4.1.5 开启串口
+
+```c
+    USART_Cmd(USART1,ENABLE);
+}
+```
+
+到此串口就配置好了
+
+### 4.2 发送数据
+
+写一个发送数据函数
+
+```c
+void Serial_SendByte(u8 Byte)
+{
+	USART_SendData(USART1, Byte);
+```
+
+为了防止数据还没发送完成下一个数据过来就把它覆盖了，所以我们需要等待一下标志位
+
+```c
+    while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);
+}
+```
+
+通过参数 `USART_FLAG_TXE` 来查看发送标志位，等待它置1
+
+当我们下一次sendbyte时，它会自动清零，所以不需要手动清啦
+
+---
+
+有了这个函数，我们就可以封装一些具有更多功能的函数，比如发送数组、发送字符串等等
+
+```c
+void Serial_SendArr(u8 *arr, u16 size)  //发送数组
+{
+	u16 i;
+	for(i=0; i<size; i++)
+	{
+		Serial_SendByte(arr[i]);
+	}
+}
+```
+
+```c
+void Serial_SendStr(char *str)  //发送字符串（使用‘\n’换行）
+{
+	u8 i;
+	for(i=0; str[i] != '\0'; i++)
+	{
+		Serial_SendByte(str[i]);
+	}
+}
+```
+
+```c
+//发送字符形式数字
+uint32_t Serial_Pow(uint32_t X, uint32_t Y)	//取出每一位数字
+{
+	uint32_t Result = 1;
+	while (Y --)
+	{
+		Result *= X;
+	}
+	return Result;
+}
+
+void Serial_SendNumber(uint32_t Number, uint8_t Length)	//发送每一位数字
+{
+	uint8_t i;
+	for (i = 0; i < Length; i ++)
+	{
+		Serial_SendByte(Number / Serial_Pow(10, Length - i - 1) % 10 + '0');
+	}
+}
+```
+
+还可以移植 `printf` 函数，不过需要先勾选 **Use MicroLIB**
+
+![](images/2024-04-25-19-53-32.png)
+
+然后在头文件引用处加上（注意.c和.h里面都要加）
+
+```c
+#include <stdio.h>
+```
+
+![](images/2024-04-25-19-55-27.png)
+
+![](images/2024-04-25-19-55-36.png)
+
+最后使用以下函数指定printf对应的串口
+
+```c
+/**
+  * 函    数：使用printf需要重定向的底层函数
+  * 参    数：保持原始格式即可，无需变动
+  * 返 回 值：保持原始格式即可，无需变动
+  */
+int fputc(int ch, FILE *f)
+{
+	Serial_SendByte(ch);			//将printf的底层重定向到自己的发送字节函数
+	return ch;
+}
+```
 
 
+对于大量数据的传输，一般推荐采用数据包的方式（参考视频9-5）
