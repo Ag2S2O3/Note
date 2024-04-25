@@ -1,5 +1,31 @@
 # ADC 模拟-数字转化器
 
+<!-- @import "[TOC]" {cmd="toc" depthFrom=2 depthTo=4 orderedList=false} -->
+
+<!-- code_chunk_output -->
+
+- [一、ADC简介](#一-adc简介)
+  - [1.1 逐次逼近型ADC](#11-逐次逼近型adc)
+  - [1.2 ADC框图](#12-adc框图)
+  - [1.3 ADC基本结构](#13-adc基本结构)
+    - [1.3.1 输入通道](#131-输入通道)
+    - [1.3.2 转换模式](#132-转换模式)
+    - [1.3.3 触发控制](#133-触发控制)
+    - [1.3.4 数据对齐](#134-数据对齐)
+    - [1.3.5 校准](#135-校准)
+- [二、初始化ADC](#二-初始化adc)
+  - [2.1 开启时钟](#21-开启时钟)
+  - [2.2 配置GPIO](#22-配置gpio)
+  - [2.3 配置多路开关，选择规则组的输入通道](#23-配置多路开关选择规则组的输入通道)
+  - [2.4 配置ADC](#24-配置adc)
+  - [2.5 开启ADC，并校准](#25-开启adc并校准)
+- [三、使用ADC转换](#三-使用adc转换)
+  - [3.1 启动ADC，获取转换结果](#31-启动adc获取转换结果)
+  - [3.2 连续、扫描模式](#32-连续-扫描模式)
+
+<!-- /code_chunk_output -->
+
+
 ## 一、ADC简介
 
 * 关键参数：
@@ -9,6 +35,8 @@
 * 18个输入通道，可测量16个外部（即GPIO口，直接在引脚上接模拟信号即可）和2个内部信号源（内部温度传感器和内部参考电压）
 * 规则组和注入组两个转换单元（可以一次启动多个组进行转换，即多通道并行）
 * 模拟看门狗自动监测输入电压范围（执行如光线强度、温度高于某个值或低于某个值的判断，当发生时模拟看门狗会申请中断，避免手动if读值）
+
+（stm32f103c8t6有ADC1、ADC2，10个外部输入通道）
 
 ### 1.1 逐次逼近型ADC
 
@@ -102,3 +130,122 @@ ADC1和ADC2共用一个通道，使用时选择一个ADC即可（双ADC模式暂
 
 （如果要中断或者看门狗，需要在4~5之间加入相应的配置）
 
+### 2.1 开启时钟
+
+开启ADC和GPIOA时钟（均挂载APB2总线上）
+
+```c
+RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
+RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+	
+RCC_ADCCLKConfig(RCC_PCLK2_Div6);
+```
+
+最后别忘了还要**配置ADCCLK对PCLK2进行分频**，这里6分频后是12MHz
+
+### 2.2 配置GPIO
+
+`GPIO_Mode_AIN` 是ADC的专属输入模式，这个模式下GPIO的输入输出对模拟信号不会有影响，所以GPIO_Mode应该配置成这个模式
+
+```c
+GPIO_InitTypeDef GPIO_Initstructure;
+GPIO_Initstructure.GPIO_Mode=GPIO_Mode_AIN;
+GPIO_Initstructure.GPIO_Pin=GPIO_Pin_0;
+GPIO_Initstructure.GPIO_Speed=GPIO_Speed_50MHz;
+GPIO_Init(GPIOA,&GPIO_Initstructure);
+```
+
+GPIOA模拟输入
+
+### 2.3 配置多路开关，选择规则组的输入通道
+
+使用 `ADC_RegularChannelConfig` 来对每个输入进行配置：
+
+第一参数选择ADC1/2，然后是指定通道（0~17），接着指定规则组序列器里的次序（1~16），最后是采样时间（需要转到定义选择固定的几个数，对采样周期没要求就随便选）
+
+```c
+ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 1, ADC_SampleTime_55Cycles5);
+```
+
+这里配置的是：在规则组菜单列表的第一个位置写入通道0，采样周期是55.5个机器周期
+
+如下图所示：
+
+![](images/2024-04-23-16-10-02.png)
+
+### 2.4 配置ADC
+
+使用结构体进行配置，老样子先创建结构体，然后设置参数，最后初始化
+
+```c
+ADC_InitTypeDef ADC_InitStructure;
+	
+ADC_InitStructure.ADC_Mode= ADC_Mode_Independent;		//独立模式
+ADC_InitStructure.ADC_DataAlign= ADC_DataAlign_Right;	//右对齐
+ADC_InitStructure.ADC_ExternalTrigConv= ADC_ExternalTrigConv_None;	//无外部触发（内部触发）
+ADC_InitStructure.ADC_ContinuousConvMode= DISABLE;		//不用连续模式
+ADC_InitStructure.ADC_ScanConvMode= DISABLE;			//不用扫描模式
+ADC_InitStructure.ADC_NbrOfChannel = 1;					//一个通道
+	
+ADC_Init(ADC1, &ADC_InitStructure);
+```
+
+* 第一个是ADC的工作模式，配置其为独立模式/双ADC模式，这里选独立模式
+* 第二个是数据对齐，这里选右对齐（参见1.3.4）
+* 第三个是外部触发转换选择，就是触发控制的触发源，其参数对应1.3.3；这里我们使用软件控制，所以参数选择NONE
+
+<br/>
+
+* 第四个是连续转换模式，对应连续和非连续
+* 第五个是扫描转换模式，对应扫描和非扫描
+* 第六个是通道数目，当指定在扫描模式下，输入会用到的通道个数<br/>（这三个详见1.3.2）
+
+>这个配置完毕后，如果还需要中断和看门狗，可以在这之后继续配置，此处就不配置了
+
+### 2.5 开启ADC，并校准
+
+启动ADC电源
+
+```c
+ADC_Cmd(ADC1, ENABLE);
+```
+
+开启ADC后，根据手册的建议，还需要对ADC进行校准，这个比较程式化
+
+```c
+ADC_ResetCalibration(ADC1);		//复位
+while(ADC_GetResetCalibrationStatus(ADC1) == SET);	//等待复位完成
+ADC_StartCalibration(ADC1);		//校准
+while(ADC_GetCalibrationStatus(ADC1) == SET);	//等待校准完成
+```
+
+这样子就ADC就准备就绪了
+
+## 三、使用ADC转换
+
+### 3.1 启动ADC，获取转换结果
+
+可以用写一个函数来获取ADC的结果
+
+```c
+u16 AD_GetValue(void)
+{
+	
+}
+```
+
+按照以下顺序即可：触发转换 $\rightarrow$ 等待转换完成（EOC置1） $\rightarrow$ 读取ADC寄存器 
+
+```c
+ADC_SoftwareStartConvCmd(ADC1, ENABLE); //软件触发
+while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET);	//等待转换完成（没完成时EOC=0（RESET））
+return ADC_GetConversionValue(ADC1);	//取得转换结果
+```
+
+读取到转换值后会自动清除EOC标志位
+
+其实整个流程就如2.2.3中图所示
+
+### 3.2 连续、扫描模式
+
+参见[DMA章节](./DMA.md)
