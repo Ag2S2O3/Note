@@ -1,5 +1,20 @@
 # UART 串口
 
+<!-- @import "[TOC]" {cmd="toc" depthFrom=2 depthTo=4 orderedList=false} -->
+
+<!-- code_chunk_output -->
+
+- [一、例程](#一-例程)
+  - [1.1 sys配置](#11-sys配置)
+    - [Basic Configuration](#basic-configuration)
+    - [Advanced Configuration](#advanced-configuration)
+    - [Interrupt Configuration](#interrupt-configuration)
+    - [PinMux](#pinmux)
+  - [1.2 程序](#12-程序)
+
+<!-- /code_chunk_output -->
+
+
 ## 一、例程
 
 实现功能：当串口接收到字符后，将字符发送回来，且每一次接收数据后LED翻转

@@ -1,5 +1,17 @@
 # CCS的使用
 
+<!-- @import "[TOC]" {cmd="toc" depthFrom=2 depthTo=4 orderedList=false} -->
+
+<!-- code_chunk_output -->
+
+- [一、保存路径](#一-保存路径)
+- [二、模块化编程](#二-模块化编程)
+- [三、关闭编译优化](#三-关闭编译优化)
+- [四、消除版本更新警告](#四-消除版本更新警告)
+
+<!-- /code_chunk_output -->
+
+
 ## 一、保存路径
 
 在 C:\Users\HMRda\workspace_ccstheia 下

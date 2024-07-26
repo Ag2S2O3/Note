@@ -1,5 +1,31 @@
 # Timer 定时器
 
+<!-- @import "[TOC]" {cmd="toc" depthFrom=2 depthTo=4 orderedList=false} -->
+
+<!-- code_chunk_output -->
+
+- [一、例程 timx_timer_mode_periodic_sleep](#一-例程-timx_timer_mode_periodic_sleep)
+  - [1.1 Preview Readme 总览](#11-preview-readme-总览)
+    - [1.1.1 Example Summary 功能](#111-example-summary-功能)
+    - [1.1.2 Example Usage](#112-example-usage)
+  - [1.2 程序分析](#12-程序分析)
+  - [1.3 sysconfig 系统配置](#13-sysconfig-系统配置)
+    - [1.3.1 GPIO](#131-gpio)
+    - [1.3.2 Timer](#132-timer)
+- [二、例程 timx_timer_mode_pwm_edge_sleep](#二-例程-timx_timer_mode_pwm_edge_sleep)
+  - [2.1 Preview Readme 总览](#21-preview-readme-总览)
+    - [2.1.1 Example Summary 功能](#211-example-summary-功能)
+    - [2.1.2 Example Usage](#212-example-usage)
+  - [2.2 程序分析](#22-程序分析)
+  - [2.3 sysconfig 系统配置](#23-sysconfig-系统配置)
+    - [Timer-PWM](#timer-pwm)
+  - [2.4 使用程序设置占空比、频率](#24-使用程序设置占空比-频率)
+    - [2.4.1 占空比](#241-占空比)
+    - [2.4.2 频率](#242-频率)
+
+<!-- /code_chunk_output -->
+
+
 ## 一、例程 timx_timer_mode_periodic_sleep
 
 ``timA`` 指高级定时器，``timG``指通用定时器
