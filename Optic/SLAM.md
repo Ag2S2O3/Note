@@ -77,7 +77,3 @@
 - **IMU+Camera（VIO）**：视觉惯性里程计（如VINS-Fusion）
 - **LiDAR+Camera**：异构传感器融合（如LVI-SAM）
 
-![](images/9w5ivqHm11RpGaL.png)
-
-##  大视场SLAM与3D高斯溅射（3DGS）稠密建图
-
